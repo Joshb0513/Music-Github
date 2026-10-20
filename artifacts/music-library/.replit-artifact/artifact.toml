@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Music Library"
+description = "A personal music library for uploading songs, editing metadata and artwork, organizing albums, listening in the browser, and sharing albums with friends by text or email."
+version = "1.0.0"
+id = "artifacts/music-library"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22511
+
+[services.development]
+run = "pnpm --filter @workspace/music-library run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/music-library", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/music-library/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22511"
+BASE_PATH = "/"

@@ -1,0 +1,647 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: music
+    description: Music library operations
+  - name: storage
+    description: File upload operations
+  - name: Auth
+    description: Browser and mobile authentication endpoints.
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /music/dashboard:
+    get:
+      operationId: getMusicDashboard
+      tags: [music]
+      summary: Get music dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MusicDashboard"
+  /music/albums:
+    get:
+      operationId: listAlbums
+      tags: [music]
+      summary: List albums
+      responses:
+        "200":
+          description: Albums
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Album"
+    post:
+      operationId: createAlbum
+      tags: [music]
+      summary: Create an album
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlbumInput"
+      responses:
+        "201":
+          description: Created album
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Album"
+  /music/albums/{albumId}:
+    get:
+      operationId: getAlbum
+      tags: [music]
+      summary: Get an album with tracks
+      parameters:
+        - $ref: "#/components/parameters/AlbumId"
+      responses:
+        "200":
+          description: Album detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlbumDetail"
+        "404":
+          description: Album not found
+    patch:
+      operationId: updateAlbum
+      tags: [music]
+      summary: Update an album
+      parameters:
+        - $ref: "#/components/parameters/AlbumId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AlbumUpdate"
+      responses:
+        "200":
+          description: Updated album
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Album"
+    delete:
+      operationId: deleteAlbum
+      tags: [music]
+      summary: Delete an album
+      parameters:
+        - $ref: "#/components/parameters/AlbumId"
+      responses:
+        "204":
+          description: Album deleted
+  /music/albums/{albumId}/publish:
+    post:
+      operationId: publishAlbum
+      tags: [music]
+      summary: Publish an album and its tracks publicly
+      parameters:
+        - $ref: "#/components/parameters/AlbumId"
+      responses:
+        "200":
+          description: Published album
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Album"
+        "401":
+          description: Sign-in required
+        "404":
+          description: Album not found
+  /music/tracks:
+    get:
+      operationId: listTracks
+      tags: [music]
+      summary: List tracks
+      parameters:
+        - name: albumId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tracks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Track"
+    post:
+      operationId: createTrack
+      tags: [music]
+      summary: Add a track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrackInput"
+      responses:
+        "201":
+          description: Created track
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+  /music/tracks/{trackId}:
+    patch:
+      operationId: updateTrack
+      tags: [music]
+      summary: Update track metadata
+      parameters:
+        - $ref: "#/components/parameters/TrackId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrackUpdate"
+      responses:
+        "200":
+          description: Updated track
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+    delete:
+      operationId: deleteTrack
+      tags: [music]
+      summary: Delete a track
+      parameters:
+        - $ref: "#/components/parameters/TrackId"
+      responses:
+        "204":
+          description: Track deleted
+  /music/tracks/{trackId}/publish:
+    post:
+      operationId: publishTrack
+      tags: [music]
+      summary: Publish a track publicly
+      parameters:
+        - $ref: "#/components/parameters/TrackId"
+      responses:
+        "200":
+          description: Published track
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+        "401":
+          description: Sign-in required
+        "404":
+          description: Track not found
+  /music/tracks/{trackId}/download:
+    get:
+      operationId: downloadTrack
+      tags: [music]
+      summary: Download a track
+      parameters:
+        - $ref: "#/components/parameters/TrackId"
+      responses:
+        "200":
+          description: Audio file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Sign-in required for private tracks
+        "404":
+          description: Track not found
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a direct upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadRequest"
+      responses:
+        "200":
+          description: Git LFS upload action and repository object metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadResponse"
+  /storage/uploads/finalize:
+    post:
+      operationId: finalizeUpload
+      tags: [storage]
+      summary: Verify uploaded Git LFS object and commit its public pointer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [objectPath, oid, size]
+              properties:
+                objectPath: { type: string }
+                oid: { type: string, pattern: "^[a-f0-9]{64}$" }
+                size: { type: integer, minimum: 1, maximum: 52428800 }
+      responses:
+        "200":
+          description: Public repository URL
+        "401":
+          description: Authentication required
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getStoredObject
+      tags: [storage]
+      summary: Serve an uploaded object
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Stored file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Object not found
+  /auth/user:
+    get:
+      tags: [Auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      responses:
+        "200":
+          description: Auth status resolved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserEnvelope"
+  /login:
+    post:
+      tags: [Auth]
+      operationId: signInWithDisplayName
+      summary: Create a session using a display name (not identity verification)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 50
+      responses:
+        "200":
+          description: Session created.
+  /logout:
+    post:
+      tags: [Auth]
+      operationId: signOutDisplayName
+      summary: End the current session
+      responses:
+        "200":
+          description: Session ended.
+  /mobile-auth/token-exchange:
+    post:
+      tags: [Auth]
+      operationId: exchangeMobileAuthorizationCode
+      summary: Exchange a mobile OIDC code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MobileTokenExchangeRequest"
+      responses:
+        "200":
+          description: Session created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MobileTokenExchangeSuccess"
+  /mobile-auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutMobileSession
+      summary: Delete a mobile session token
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+      responses:
+        "200":
+          description: Logout processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutSuccess"
+components:
+  parameters:
+    AlbumId:
+      name: albumId
+      in: path
+      required: true
+      schema:
+        type: integer
+    TrackId:
+      name: trackId
+      in: path
+      required: true
+      schema:
+        type: integer
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      schema:
+        type: string
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      schema:
+        type: string
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Album:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        artist:
+          type: string
+        year:
+          type: integer
+        coverArtPath:
+          type: ["string", "null"]
+        trackCount:
+          type: integer
+        isPublished:
+          type: boolean
+        canManage:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, artist, year, coverArtPath, trackCount, isPublished, canManage, createdAt]
+    AlbumDetail:
+      allOf:
+        - $ref: "#/components/schemas/Album"
+        - type: object
+          properties:
+            tracks:
+              type: array
+              items:
+                $ref: "#/components/schemas/Track"
+          required: [tracks]
+    AlbumInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        artist:
+          type: string
+          minLength: 1
+        year:
+          type: integer
+          minimum: 0
+        coverArtPath:
+          type: ["string", "null"]
+      required: [title, artist, year]
+    AlbumUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        artist:
+          type: string
+          minLength: 1
+        year:
+          type: integer
+          minimum: 0
+        coverArtPath:
+          type: ["string", "null"]
+    Track:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        artist:
+          type: string
+        year:
+          type: integer
+        albumId:
+          type: ["integer", "null"]
+        albumTitle:
+          type: ["string", "null"]
+        coverArtPath:
+          type: ["string", "null"]
+        audioPath:
+          type: string
+        durationSeconds:
+          type: ["integer", "null"]
+        isPublished:
+          type: boolean
+        canManage:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, artist, year, albumId, albumTitle, coverArtPath, audioPath, durationSeconds, isPublished, canManage, createdAt]
+    TrackInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        artist:
+          type: string
+          minLength: 1
+        year:
+          type: integer
+          minimum: 0
+        albumId:
+          type: ["integer", "null"]
+        coverArtPath:
+          type: ["string", "null"]
+        audioPath:
+          type: string
+          minLength: 1
+        durationSeconds:
+          type: ["integer", "null"]
+      required: [title, artist, year, audioPath]
+    TrackUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        artist:
+          type: string
+          minLength: 1
+        year:
+          type: integer
+          minimum: 0
+        albumId:
+          type: ["integer", "null"]
+        audioPath:
+          type: string
+          minLength: 1
+        coverArtPath:
+          type: ["string", "null"]
+    MusicDashboard:
+      type: object
+      properties:
+        trackCount:
+          type: integer
+        albumCount:
+          type: integer
+        totalMinutes:
+          type: integer
+        recentlyAdded:
+          type: array
+          items:
+            $ref: "#/components/schemas/Track"
+      required: [trackCount, albumCount, totalMinutes, recentlyAdded]
+    UploadRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 52428800
+        contentType:
+          type: string
+          minLength: 1
+          maxLength: 100
+        oid:
+          type: string
+          pattern: "^[a-f0-9]{64}$"
+      required: [name, size, contentType, oid]
+    UploadResponse:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        uploadHeaders:
+          type: object
+          additionalProperties:
+            type: string
+      required: [uploadURL, objectPath, uploadHeaders]
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id:
+          type: string
+        email:
+          type: ["string", "null"]
+          format: email
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        profileImageUrl:
+          type: ["string", "null"]
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+    MobileTokenExchangeRequest:
+      type: object
+      required: [code, code_verifier, redirect_uri, state]
+      properties:
+        code:
+          type: string
+          minLength: 1
+        code_verifier:
+          type: string
+          minLength: 1
+        redirect_uri:
+          type: string
+          minLength: 1
+          format: uri
+        state:
+          type: string
+          minLength: 1
+        nonce:
+          type: string
+          minLength: 1
+    MobileTokenExchangeSuccess:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+    LogoutSuccess:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          const: true
